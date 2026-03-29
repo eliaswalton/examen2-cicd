@@ -1,0 +1,36 @@
+name: CD Pipeline
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    name: Deploy to Docker Hub
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DEPLOY_KEY }}
+          password: ${{ secrets.API_TOKEN }}
+
+      - name: Build Docker image
+        run: |
+          docker build -t ${{ secrets.DEPLOY_KEY }}/myapp:latest .
+          docker build -t ${{ secrets.DEPLOY_KEY }}/myapp:${{ github.sha }} .
+
+      - name: Push Docker image
+        run: |
+          docker push ${{ secrets.DEPLOY_KEY }}/myapp:latest
+          docker push ${{ secrets.DEPLOY_KEY }}/myapp:${{ github.sha }}
+
+      - name: Deployment summary
+        run: |
+          echo "✅ Deployed: ${{ secrets.DEPLOY_KEY }}/myapp:${{ github.sha }}"
+          echo "🚀 Production deployment completed!"
